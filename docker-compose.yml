@@ -1,0 +1,20 @@
+services:
+  dbrowser:
+    build: .
+    ports:
+      - "8820:3000"
+    volumes:
+      # Bind mount example — point at a directory on the host:
+      # - /path/to/your/app/data:/data/myapp:ro
+
+      # Docker-managed volume example — reference an existing named volume:
+      # - myapp_data:/data/myapp:ro
+
+      # Add as many databases as you like; each sub-path under /data becomes
+      # a separate database in the sidebar.
+    restart: unless-stopped
+
+# Uncomment and list any external Docker-managed volumes you mount above:
+# volumes:
+#   myapp_data:
+#     external: true

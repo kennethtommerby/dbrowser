@@ -1,0 +1,28 @@
+# docker-compose.example.yml
+# Copy this file to docker-compose.yml and adjust to match your own setup.
+
+services:
+  dbrowser:
+    build: .
+    ports:
+      # Host port 8820 maps to the container's port 3000.
+      # Change the left side if 8820 is already in use on your host.
+      - "8820:3000"
+    volumes:
+      # ── Bind mount ────────────────────────────────────────────────────────
+      # Point directly at a directory on the host that contains .db files.
+      # The :ro flag makes it read-only (recommended).
+      - /path/to/your/app/data:/data/myapp:ro
+
+      # ── Docker-managed volume ──────────────────────────────────────────────
+      # Reference a named volume created by another compose project.
+      # The volume must be declared in the top-level `volumes` section below.
+      - otherapp_data:/data/otherapp:ro
+
+    restart: unless-stopped
+
+# Declare any Docker-managed volumes referenced above.
+# Use `external: true` when the volume was created by a different project.
+volumes:
+  otherapp_data:
+    external: true
