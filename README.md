@@ -18,7 +18,7 @@ setup — just a clean table browser and SQL editor in one interface.
 
 ## Screenshot
 
-*(screenshot kommer)*
+<img width="1726" height="1005" alt="image" src="https://github.com/user-attachments/assets/2e36f2a4-550e-4c1c-86c0-5820aa165efc" />
 
 ## Getting started
 
