@@ -28,6 +28,14 @@ function ChevronIcon({ open }) {
   );
 }
 
+function GearIcon() {
+  return (
+    <svg viewBox="0 0 20 20" width="15" height="15" fill="currentColor" aria-hidden>
+      <path fillRule="evenodd" d="M8.34 1.804A1 1 0 0 1 9.32 1h1.36a1 1 0 0 1 .98.804l.295 1.473c.497.144.971.342 1.416.587l1.25-.834a1 1 0 0 1 1.262.125l.962.962a1 1 0 0 1 .125 1.262l-.834 1.25c.245.445.443.919.587 1.416l1.473.294a1 1 0 0 1 .804.98v1.361a1 1 0 0 1-.804.98l-1.473.295a6.95 6.95 0 0 1-.587 1.416l.834 1.25a1 1 0 0 1-.125 1.262l-.962.962a1 1 0 0 1-1.262.125l-1.25-.834a6.953 6.953 0 0 1-1.416.587l-.294 1.473a1 1 0 0 1-.98.804H9.32a1 1 0 0 1-.98-.804l-.295-1.473a6.957 6.957 0 0 1-1.416-.587l-1.25.834a1 1 0 0 1-1.262-.125l-.962-.962a1 1 0 0 1-.125-1.262l.834-1.25a6.957 6.957 0 0 1-.587-1.416l-1.473-.294A1 1 0 0 1 1 10.68V9.32a1 1 0 0 1 .804-.98l1.473-.295c.144-.497.342-.971.587-1.416l-.834-1.25a1 1 0 0 1 .125-1.262l.962-.962A1 1 0 0 1 5.38 2.93l1.25.834a6.957 6.957 0 0 1 1.416-.587L8.34 1.804ZM10 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" clipRule="evenodd" />
+    </svg>
+  );
+}
+
 function LockIcon({ locked }) {
   return (
     <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden>
@@ -197,7 +205,7 @@ function SettingsPanel({ onClose, onSaved }) {
           </div>
         )}
 
-        {saveError && <div className="settings-error">{saveError}</div>}
+        {saveError && <div className="settings-error" role="alert">{saveError}</div>}
 
         <div className="settings-footer">
           <button className="run-btn" onClick={save} disabled={saving}>
@@ -223,6 +231,7 @@ export default function App() {
   const [sqlResult, setSqlResult] = useState(null);
   const [sqlError, setSqlError] = useState(null);
   const [drawerMode, setDrawerMode] = useState('closed'); // 'closed' | 'minimized' | 'open'
+  const [copied, setCopied] = useState(false);
   const [sqlLocked, setSqlLocked] = useState(false);
   const [lockedContext, setLockedContext] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -324,6 +333,39 @@ export default function App() {
     }
   }
 
+  function copyToClipboard(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text);
+    }
+    const el = document.createElement('textarea');
+    el.value = text;
+    el.style.position = 'fixed';
+    el.style.opacity = '0';
+    document.body.appendChild(el);
+    el.focus();
+    el.select();
+    try {
+      document.execCommand('copy');
+    } finally {
+      document.body.removeChild(el);
+    }
+    return Promise.resolve();
+  }
+
+  function copyResult() {
+    if (!sqlResult) return;
+    const header = sqlResult.columns.map(c => c.name).join('\t');
+    const rows = sqlResult.rows.map(row =>
+      sqlResult.columns.map(c => {
+        const v = row[c.name];
+        return v === null || v === undefined ? '' : String(v);
+      }).join('\t')
+    );
+    copyToClipboard([header, ...rows].join('\n'));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
   async function runQuery() {
     if (!queryTarget || !sqlInput.trim()) return;
     setSqlError(null);
@@ -355,7 +397,11 @@ export default function App() {
           {databases.length === 0 && <p className="tree-empty">Ingen databaser fundet</p>}
           {databases.map(db => (
             <div key={db.name}>
-              <button className="tree-db" onClick={() => toggleDb(db.name)}>
+              <button
+                  className="tree-db"
+                  onClick={() => toggleDb(db.name)}
+                  aria-expanded={expanded.has(db.name)}
+                >>
                 <ChevronIcon open={expanded.has(db.name)} />
                 <DbIcon />
                 <span className="tree-label">{db.name}</span>
@@ -386,7 +432,7 @@ export default function App() {
             title="Indstillinger"
             aria-label="Indstillinger"
           >
-            ⚙
+            <GearIcon />
           </button>
         </div>
       </aside>
@@ -465,6 +511,7 @@ export default function App() {
             className="sql-tab"
             onClick={() => setDrawerMode('open')}
             title="Åbn SQL Editor"
+            aria-label="Åbn SQL Editor"
           >
             <span className="sql-tab-label">SQL</span>
           </button>
@@ -555,10 +602,15 @@ export default function App() {
                 placeholder="SELECT * FROM ..."
                 spellCheck={false}
               />
-              {sqlError && <div className="sql-error">{sqlError}</div>}
+              {sqlError && <div className="sql-error" role="alert">{sqlError}</div>}
               {sqlResult && (
                 <div className="sql-result">
-                  <div className="sql-result-meta">{sqlResult.total.toLocaleString('da-DK')} rækker</div>
+                  <div className="sql-result-meta">
+                    {sqlResult.total.toLocaleString('da-DK')} rækker
+                    <button className="copy-btn" onClick={copyResult}>
+                      {copied ? 'Kopieret!' : 'Kopiér'}
+                    </button>
+                  </div>
                   <div className="sql-table-scroll">
                     <DataTable columns={sqlResult.columns} rows={sqlResult.rows} />
                   </div>
